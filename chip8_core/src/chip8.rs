@@ -1,3 +1,5 @@
+use rand::Rng;
+use rand::distributions::{Uniform};
 use crate::display::Display;
 
 const MEMORY_SIZE: usize = 4096;
@@ -7,6 +9,7 @@ const FONT_SIZE: usize = 80;
 pub const SCREEN_WIDTH: usize = 64;
 pub const SCREEN_HEIGHT: usize = 32;
 const MEMORY_START_ADDRESS: u16 = 512;
+const NUMBER_OF_KEYS: usize = 16;
 const FONTS: [u8; FONT_SIZE] = [
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
     0x20, 0x60, 0x20, 0x20, 0x70, // 1
@@ -34,6 +37,7 @@ pub struct Chip8 {
     sp: u8,
     delay_timer: u8,
     sound_timer: u8,
+    keys: [bool; NUMBER_OF_KEYS],
     v: [u8; NUMBER_OF_REGISTERS],
     screen: [bool; SCREEN_WIDTH * SCREEN_HEIGHT],
 }
@@ -48,8 +52,9 @@ impl Chip8 {
             sp: 0,
             delay_timer: 0,
             sound_timer: 0,
-            screen: [false; SCREEN_WIDTH * SCREEN_HEIGHT],
+            keys: [false; NUMBER_OF_KEYS],
             v: [0; NUMBER_OF_REGISTERS],
+            screen: [false; SCREEN_WIDTH * SCREEN_HEIGHT],
         };
         new_chip8.memory[..FONT_SIZE].copy_from_slice(&FONTS);
         new_chip8
@@ -181,6 +186,11 @@ impl Chip8 {
                 self.v[x as usize] = current_x;
                 self.v[0xF] = new_vf;
             }
+            (8, _, _, 0xE) => {
+                let shifted_bit = (self.v[x as usize] >> 7) & 0x1;
+                self.v[x as usize] <<= 1;
+                self.v[0xF] = shifted_bit;
+            }
             (9, _ ,_ , 0) => {
                 if self.v[x as usize] == self.v[y as usize] {
                     self.pc += 2;
@@ -188,6 +198,15 @@ impl Chip8 {
             }
             (0xA, _, _, _) => {
                 self.i = nnn;
+            }
+            (0xB, _, _, _) => {
+                 self.pc = (self.v[0] as u16) + nnn;
+            }
+            (0xC, _, _, _) => {
+                let mut rng = rand::thread_rng();
+                let range = Uniform::from(0..kk);
+                let random_bit = rng.sample(range);
+                self.v[x as usize] = (random_bit & kk) as u8;
             }
             (0xD, _, _, _) => {
                 // Getting the coordinates out of their respective
@@ -238,6 +257,20 @@ impl Chip8 {
                     self.v[0xF] = 1;
                 } else {
                     self.v[0xF] = 0;
+                }
+            }
+            (0xE, _, 9, 0xE) => {
+                let key_index = self.v[x as usize];
+                let is_pressed = self.keys[key_index as usize];
+                if is_pressed {
+                    self.pc += 2;
+                }
+            }
+            (0xE, _, 0xA, 1) => {
+                let key_index = self.v[x as usize];
+                let is_pressed = self.keys[key_index as usize];
+                if !is_pressed {
+                    self.pc += 2;
                 }
             }
             (_, _, _, _) => unimplemented!("Unimplemented opcode. Opcode: {}", opcode),
