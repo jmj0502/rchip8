@@ -1,6 +1,6 @@
-use rand::Rng;
-use rand::distributions::{Uniform};
 use crate::display::Display;
+use rand::distributions::Uniform;
+use rand::Rng;
 
 const MEMORY_SIZE: usize = 4096;
 const STACK_SIZE: usize = 16;
@@ -75,6 +75,19 @@ impl Chip8 {
         self.screen
     }
 
+    pub fn timers_tick(&mut self) {
+        if self.delay_timer > 0 {
+            self.delay_timer -= 1;
+        }
+
+        if self.sound_timer > 0 {
+            if self.sound_timer == 1 {
+                // beep function.
+            }
+            self.sound_timer -= 1;
+        }
+    }
+
     fn push(&mut self, instruction: u16) {
         self.stack[self.sp as usize] = instruction;
         self.sp += 1;
@@ -122,17 +135,17 @@ impl Chip8 {
             (2, _, _, _) => {
                 self.push(self.pc);
                 self.pc = nnn;
-            },
+            }
             (0, 0, 0xE, 0xE) => {
                 let subroutine_value = self.pop();
                 self.pc = subroutine_value;
-            },
-            (3, _ , _, _) => {
+            }
+            (3, _, _, _) => {
                 if self.v[x as usize] == (kk as u8) {
                     self.pc += 2;
                 }
             }
-            (4, _ , _, _) => {
+            (4, _, _, _) => {
                 if self.v[x as usize] != (kk as u8) {
                     self.pc += 2;
                 }
@@ -191,7 +204,7 @@ impl Chip8 {
                 self.v[x as usize] <<= 1;
                 self.v[0xF] = shifted_bit;
             }
-            (9, _ ,_ , 0) => {
+            (9, _, _, 0) => {
                 if self.v[x as usize] == self.v[y as usize] {
                     self.pc += 2;
                 }
@@ -200,7 +213,7 @@ impl Chip8 {
                 self.i = nnn;
             }
             (0xB, _, _, _) => {
-                 self.pc = (self.v[0] as u16) + nnn;
+                self.pc = (self.v[0] as u16) + nnn;
             }
             (0xC, _, _, _) => {
                 let mut rng = rand::thread_rng();
@@ -272,6 +285,45 @@ impl Chip8 {
                 if !is_pressed {
                     self.pc += 2;
                 }
+            }
+            (0xF, _, 0, 7) => {
+                self.v[x as usize] = self.delay_timer;
+            }
+            (0xF, _, 1, 5) => {
+                self.delay_timer = self.v[x as usize];
+            }
+            (0xF, _, 1, 8) => {
+                self.sound_timer = self.v[x as usize];
+            }
+            (0xF, _, 1, 0xE) => {
+                let (current_i, overflow) = self.i.overflowing_add(self.v[x as usize] as u16);
+                self.i = current_i;
+                if overflow {
+                    self.v[0xF] = 1;
+                }
+            }
+            (0xF, _, 0, 0xA) => {
+                let mut pressed = false;
+                for i in 0..self.keys.len() {
+                    if self.keys[i] {
+                        self.v[x as usize] = i as u8;
+                        pressed = true;
+                        break;
+                    }
+                }
+                if !pressed {
+                    self.pc -= 2;
+                };
+            }
+            (0xF, _, 2, 9) => {
+                let vx = self.v[x as usize];
+                self.i = vx * 5;
+            }
+            (0xF, _, 3, 3) => {
+                let vx = self.v[x as usize];
+                let hundreds = (vx / 100.0).floor() as u8;
+                let tens = ((vx / 10.0) % 10.0).floor() as u8;
+                let ones = (vc % 10.0) as u8;
             }
             (_, _, _, _) => unimplemented!("Unimplemented opcode. Opcode: {}", opcode),
         };
