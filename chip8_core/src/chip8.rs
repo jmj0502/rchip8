@@ -75,7 +75,7 @@ impl Chip8 {
         self.screen
     }
 
-    pub fn timers_tick(&mut self) {
+    pub fn tick_timers(&mut self) {
         if self.delay_timer > 0 {
             self.delay_timer -= 1;
         }
@@ -85,6 +85,12 @@ impl Chip8 {
                 // beep function.
             }
             self.sound_timer -= 1;
+        }
+    }
+
+    pub fn key_down(&mut self, key: Option<u8>, is_down: bool) {
+        if let Some(key_index) = key {
+            self.keys[key_index as usize] = is_down;
         }
     }
 
@@ -317,13 +323,27 @@ impl Chip8 {
             }
             (0xF, _, 2, 9) => {
                 let vx = self.v[x as usize];
-                self.i = vx * 5;
+                self.i = (vx * 5) as u16;
             }
             (0xF, _, 3, 3) => {
                 let vx = self.v[x as usize];
-                let hundreds = (vx / 100.0).floor() as u8;
-                let tens = ((vx / 10.0) % 10.0).floor() as u8;
-                let ones = (vc % 10.0) as u8;
+                let hundreds = ((vx as f32) / 100.0).floor() as u8;
+                let tens = (((vx as f32) / 10.0) % 10.0).floor() as u8;
+                let ones = ((vx as f32) % 10.0) as u8;
+
+                self.memory[(self.i) as usize] = hundreds;
+                self.memory[(self.i + 1) as usize] = tens;
+                self.memory[(self.i + 2) as usize] = ones;
+            }
+            (0xF, _, 5, 5) => {
+                for i in 0..=x {
+                    self.memory[(self.i + i) as usize] = self.v[i as usize];
+                }
+            }
+            (0xF, _, 6, 5) => {
+                for i in 0..=x {
+                    self.v[i as usize] = self.memory[(self.i + i) as usize];
+                }
             }
             (_, _, _, _) => unimplemented!("Unimplemented opcode. Opcode: {}", opcode),
         };
