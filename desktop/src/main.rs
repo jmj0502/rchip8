@@ -1,14 +1,9 @@
 extern crate sdl2;
 
-use chip8_core::chip8::{Chip8, SCREEN_HEIGHT, SCREEN_WIDTH};
-use chip8_core::hello_core;
+use chip8_core::chip8::{Chip8};
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
-use sdl2::pixels::Color;
-use sdl2::rect::Rect;
-use sdl2::render::WindowCanvas;
-use std::io::Read;
-use std::time::{Duration, UNIX_EPOCH};
+use std::time::{Duration};
 use desktop::{map_key, get_current_time_in_microseconds};
 
 fn main() {
@@ -32,7 +27,6 @@ fn main() {
 
     let mut canvas = window.into_canvas().build().unwrap();
     let mut event_pump = sdl_context.event_pump().unwrap();
-    let mut i = 0;
     'running: loop {
         for event in event_pump.poll_iter() {
             match event {
