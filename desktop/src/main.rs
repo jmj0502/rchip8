@@ -9,35 +9,7 @@ use sdl2::rect::Rect;
 use sdl2::render::WindowCanvas;
 use std::io::Read;
 use std::time::{Duration, UNIX_EPOCH};
-use desktop::map_key;
-
-//const SCALE: u32 = 15;
-//
-//fn draw_to_screen(canvas: &mut WindowCanvas, emu: &Chip8) {
-//    canvas.set_draw_color(Color::RGB(0, 0, 0));
-//    canvas.clear();
-//
-//    let screen_buffer = emu.get_display();
-//    canvas.set_draw_color(Color::RGB(255, 255, 255));
-//    for (i, pixel) in screen_buffer.iter().enumerate() {
-//        if *pixel {
-//            let x = (i % SCREEN_WIDTH) as u32;
-//            let y = (i / SCREEN_WIDTH) as u32;
-//            let rect = Rect::new((x * SCALE) as i32, (y * SCALE) as i32, SCALE, SCALE);
-//            canvas.fill_rect(rect).unwrap();
-//        }
-//    }
-//    canvas.present();
-//}
-//
-//fn load_file(path: &str, emu: &mut Chip8) {
-//    let mut file = std::fs::File::open(path).expect("Couldn't find the specified file.");
-//    let mut file_buffer = Vec::new();
-//
-//    file.read_to_end(&mut file_buffer)
-//        .expect("Couldn't read file to memory!");
-//    emu.load_file(&file_buffer);
-//}
+use desktop::{map_key, get_current_time_in_microseconds};
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -76,7 +48,7 @@ fn main() {
                     let key = map_key(keycode);
                     chip8.key_down(key, true);
                 },
-                Event::KeyDown {
+                Event::KeyUp {
                     keycode: Some(keycode),
                     ..
                 } => {
@@ -86,14 +58,18 @@ fn main() {
                 _ => {}
             }
         }
+
+        let start_time = get_current_time_in_microseconds();
         // The rest of the game loop goes here...
-        //let system_time = std::time::SystemTime::now();
-        //let start_time_in_ms = system_time.duration_since(UNIX_EPOCH).expect("Couldn't convert").as_millis();
         for _ in 0..NUMBER_OF_CYCLES {
             chip8.tick();
         }
         chip8.tick_timers();
         desktop::draw_to_screen(&mut canvas, &mut chip8);
         canvas.present();
+        let end_time = get_current_time_in_microseconds();
+        // This sleep call ensures that the system will run at 60fps. Since modern hardware is so advanced this is
+        // required in order to provide a decent execution speed.
+        std::thread::sleep(Duration::from_micros((16666.67 as u64) - (end_time - start_time) as u64));
     }
 }

@@ -5,6 +5,7 @@ use chip8_core::chip8::{Chip8, SCREEN_WIDTH, SCREEN_HEIGHT};
 use std::fs::File;
 use std::io::Read;
 use sdl2::keyboard::Keycode;
+use std::time::UNIX_EPOCH;
 
 
 const SCALE: u32 = 15;
@@ -55,6 +56,12 @@ pub fn map_key(key: Keycode) -> Option<u8> {
         Keycode::V => Some(0xF),
         _ => None
     }
+}
+
+pub fn get_current_time_in_microseconds() -> u128 {
+    let current_system_time = std::time::SystemTime::now();
+    let current_time_in_micros = current_system_time.duration_since(UNIX_EPOCH).expect("Couldn't convert").as_micros();
+    current_time_in_micros
 }
 
 struct SDLCanvas {
