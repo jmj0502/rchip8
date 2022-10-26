@@ -1,6 +1,8 @@
 //use crate::display::Display;
 use rand::distributions::Uniform;
 use rand::Rng;
+use crate::display::{Display, Scale};
+use std::cell::RefCell;
 
 const MEMORY_SIZE: usize = 4096;
 const STACK_SIZE: usize = 16;
@@ -29,7 +31,7 @@ const FONTS: [u8; FONT_SIZE] = [
     0xF0, 0x80, 0xF0, 0x80, 0x80, // F
 ];
 
-pub struct Chip8 {
+pub struct Chip8<'a> {
     memory: [u8; MEMORY_SIZE],
     i: u16,
     stack: [u16; STACK_SIZE],
@@ -40,10 +42,11 @@ pub struct Chip8 {
     keys: [bool; NUMBER_OF_KEYS],
     v: [u8; NUMBER_OF_REGISTERS],
     screen: [bool; SCREEN_WIDTH * SCREEN_HEIGHT],
+    display: Box<&'a dyn Display>
 }
 
-impl Chip8 {
-    pub fn new() -> Self {
+impl<'a> Chip8<'a> {
+    pub fn new(display: &'a dyn Display) -> Self {
         let mut new_chip8 = Self {
             memory: [0; MEMORY_SIZE],
             i: 0,
@@ -55,6 +58,7 @@ impl Chip8 {
             keys: [false; NUMBER_OF_KEYS],
             v: [0; NUMBER_OF_REGISTERS],
             screen: [false; SCREEN_WIDTH * SCREEN_HEIGHT],
+            display: Box::new(display),
         };
         new_chip8.memory[..FONT_SIZE].copy_from_slice(&FONTS);
         new_chip8
@@ -92,6 +96,10 @@ impl Chip8 {
         if let Some(key_index) = key {
             self.keys[key_index as usize] = is_down;
         }
+    }
+
+    pub fn render_screen(&self, scale: &Scale) {
+        self.display.draw_to_screen(&self.screen, scale);
     }
 
     fn push(&mut self, instruction: u16) {

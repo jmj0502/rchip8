@@ -1,36 +1,52 @@
 use chip8_core::chip8::{Chip8, SCREEN_WIDTH};
+use chip8_core::display::{Display, Scale};
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::WindowCanvas;
 use std::io::Read;
 use std::time::UNIX_EPOCH;
+use std::cell::RefCell;
 
-pub struct Scale {
-    pub width: i32,
-    pub height: i32,
+//pub struct Scale {
+//    pub width: i32,
+//    pub height: i32,
+//}
+
+pub struct SDLDisplay {
+    canvas: RefCell<WindowCanvas>
 }
 
-pub fn draw_to_screen(canvas: &mut WindowCanvas, emu: &Chip8, scale: &Scale) {
-    canvas.set_draw_color(Color::RGB(0, 0, 0));
-    canvas.clear();
-
-    let screen_buffer = emu.get_display();
-    canvas.set_draw_color(Color::RGB(255, 255, 255));
-    for (i, pixel) in screen_buffer.iter().enumerate() {
-        if *pixel {
-            let x = (i % SCREEN_WIDTH) as u32;
-            let y = (i / SCREEN_WIDTH) as u32;
-            let rect = Rect::new(
-                (x * (scale.width as u32)) as i32,
-                (y * (scale.height as u32)) as i32,
-                scale.width as u32,
-                scale.height as u32,
-            );
-            canvas.fill_rect(rect).unwrap();
+impl SDLDisplay {
+    pub fn new(canvas: WindowCanvas) -> Self {
+        Self {
+            canvas: RefCell::new(canvas),
         }
     }
-    canvas.present();
+}
+
+impl Display for SDLDisplay {
+
+    fn draw_to_screen(&self, screen_buf: &[bool; 2048], scale: &Scale) {
+        self.canvas.borrow_mut().set_draw_color(Color::RGB(0, 0, 0));
+        self.canvas.borrow_mut().clear();
+
+        self.canvas.borrow_mut().set_draw_color(Color::RGB(255, 255, 255));
+        for (i, pixel) in screen_buf.iter().enumerate() {
+            if *pixel {
+                let x = (i % SCREEN_WIDTH) as u32;
+                let y = (i / SCREEN_WIDTH) as u32;
+                let rect = Rect::new(
+                    (x * (scale.width as u32)) as i32,
+                    (y * (scale.height as u32)) as i32,
+                    scale.width as u32,
+                    scale.height as u32,
+                );
+                self.canvas.borrow_mut().fill_rect(rect).unwrap();
+            }
+        }
+        self.canvas.borrow_mut().present();
+    }
 }
 
 pub fn load_file(path: &str, emu: &mut Chip8) {
