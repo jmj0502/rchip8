@@ -129,6 +129,7 @@ impl Chip8 {
         // explained above.
         let y = (opcode & 0x00F0) >> 4;
 
+        println!("Current instruction: {:#04x} {:#04x} {:#04x} {:#04x}", first_nibble, x, y, n);
         match (first_nibble, x, y, n) {
             // No OP opcode.
             (0, 0, 0, 0) => return,
@@ -211,7 +212,7 @@ impl Chip8 {
                 self.v[0xF] = shifted_bit;
             }
             (9, _, _, 0) => {
-                if self.v[x as usize] == self.v[y as usize] {
+                if self.v[x as usize] != self.v[y as usize] {
                     self.pc += 2;
                 }
             }
