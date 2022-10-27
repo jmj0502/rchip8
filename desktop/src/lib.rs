@@ -1,36 +1,84 @@
-use chip8_core::chip8::{Chip8, SCREEN_WIDTH};
+pub mod display;
+pub mod audio;
+
+use chip8_core::chip8::{Chip8};
+use sdl2::event::{Event, WindowEvent};
 use sdl2::keyboard::Keycode;
-use sdl2::pixels::Color;
-use sdl2::rect::Rect;
-use sdl2::render::WindowCanvas;
+use std::time::Duration;
 use std::io::Read;
 use std::time::UNIX_EPOCH;
+use crate::audio::AudioDeviceWrapper;
 
-pub struct Scale {
-    pub width: i32,
-    pub height: i32,
-}
+pub fn run(path_to_rom: &str) {
+    const NUMBER_OF_CYCLES: u8 = 10;
+    let mut chip8 = Chip8::new();
+    let mut scale = display::Scale {
+        width: 15,
+        height: 15,
+    };
+    load_file(path_to_rom, &mut chip8);
+    let sdl_context = sdl2::init().unwrap();
+    let video_subsystem = sdl_context.video().expect("Couldn't initialize the video component.");
+    let audio_subsystem = sdl_context.audio().expect("Couldn't initialize the audio component.");
+    let audio_device = AudioDeviceWrapper::new(&audio_subsystem);
 
-pub fn draw_to_screen(canvas: &mut WindowCanvas, emu: &Chip8, scale: &Scale) {
-    canvas.set_draw_color(Color::RGB(0, 0, 0));
-    canvas.clear();
+    let window = video_subsystem
+        .window("rust-sdl2 demo", 950, 600)
+        .position_centered()
+        .resizable()
+        .opengl()
+        .build()
+        .unwrap();
 
-    let screen_buffer = emu.get_display();
-    canvas.set_draw_color(Color::RGB(255, 255, 255));
-    for (i, pixel) in screen_buffer.iter().enumerate() {
-        if *pixel {
-            let x = (i % SCREEN_WIDTH) as u32;
-            let y = (i / SCREEN_WIDTH) as u32;
-            let rect = Rect::new(
-                (x * (scale.width as u32)) as i32,
-                (y * (scale.height as u32)) as i32,
-                scale.width as u32,
-                scale.height as u32,
-            );
-            canvas.fill_rect(rect).unwrap();
+    let mut canvas = window.into_canvas().build().unwrap();
+    let mut event_pump = sdl_context.event_pump().unwrap();
+    'running: loop {
+        for event in event_pump.poll_iter() {
+            match event {
+                Event::Quit { .. }
+                | Event::KeyDown {
+                    keycode: Some(Keycode::Escape),
+                    ..
+                } => break 'running,
+                Event::KeyDown {
+                    keycode: Some(keycode),
+                    ..
+                } => {
+                    let key = map_key(keycode);
+                    chip8.key_down(key, true);
+                }
+                Event::KeyUp {
+                    keycode: Some(keycode),
+                    ..
+                } => {
+                    let key = map_key(keycode);
+                    chip8.key_down(key, false);
+                }
+                Event::Window { win_event, .. } => {
+                    if let WindowEvent::Resized(w, h) = win_event {
+                        scale.width = w / 64;
+                        scale.height = h / 32;
+                    }
+                }
+                _ => {}
+            }
         }
+
+        let _start_time = get_current_time_in_microseconds();
+        // The rest of the game loop goes here...
+        for _ in 0..NUMBER_OF_CYCLES {
+            chip8.tick();
+        }
+        let should_beep = chip8.tick_timers();
+        display::draw_to_screen(&mut canvas, &mut chip8, &scale);
+        canvas.present();
+        audio_device.beep(should_beep);
+        let _end_time = get_current_time_in_microseconds();
+
+        // This sleep call ensures that the system will run at 60fps. Modern hardware is so advanced that the emulator
+        // may run at more than 400fps. So, this step is required in order to achieve a decent execution speed.
+        std::thread::sleep(Duration::from_millis(2));
     }
-    canvas.present();
 }
 
 pub fn load_file(path: &str, emu: &mut Chip8) {

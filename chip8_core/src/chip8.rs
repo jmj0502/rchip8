@@ -1,4 +1,3 @@
-//use crate::display::Display;
 use rand::distributions::Uniform;
 use rand::Rng;
 
@@ -75,17 +74,19 @@ impl Chip8 {
         self.screen
     }
 
-    pub fn tick_timers(&mut self) {
+    pub fn tick_timers(&mut self) -> bool {
         if self.delay_timer > 0 {
             self.delay_timer -= 1;
         }
 
         if self.sound_timer > 0 {
             if self.sound_timer == 1 {
-                // beep function.
+                return true;
             }
             self.sound_timer -= 1;
         }
+
+        false
     }
 
     pub fn key_down(&mut self, key: Option<u8>, is_down: bool) {
