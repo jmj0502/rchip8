@@ -69,17 +69,20 @@ pub fn run(path_to_rom: &str) {
         for _ in 0..NUMBER_OF_CYCLES {
             chip8.tick();
         }
-        let should_beep = chip8.tick_timers();
-        display::draw_to_screen(&mut canvas, &mut chip8, &scale);
-        canvas.present();
-        println!("Should beep: {}", should_beep);
-        audio_device.beep(should_beep);
         let _end_time = get_current_time_in_microseconds();
 
         // This sleep call ensures that the system will run at 60fps. Modern hardware is so advanced that the emulator
         // may run at more than 400fps. So, this step is required in order to achieve a decent execution speed.
-        //std::thread::sleep(Duration::from_millis(21));
         std::thread::sleep(Duration::from_micros((16666.67 as u64) - (_end_time - _start_time) as u64));
+        display::draw_to_screen(&mut canvas, &mut chip8, &scale);
+        canvas.present();
+        let should_beep = chip8.tick_timers();
+        println!("Should beep: {}", should_beep);
+        audio_device.beep(should_beep);
+
+        // This sleep call ensures that the system will run at 60fps. Modern hardware is so advanced that the emulator
+        // may run at more than 400fps. So, this step is required in order to achieve a decent execution speed.
+        //std::thread::sleep(Duration::from_millis(21));
     }
 }
 

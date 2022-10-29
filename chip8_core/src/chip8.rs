@@ -81,7 +81,7 @@ impl Chip8 {
 
         if self.sound_timer > 0 {
             self.sound_timer -= 1;
-            if self.sound_timer == 1 {
+            if self.sound_timer > 0 {
                 return true;
             }
         }
