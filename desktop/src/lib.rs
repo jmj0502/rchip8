@@ -14,7 +14,7 @@ pub fn run(path_to_rom: &str) {
     let mut chip8 = Chip8::new();
     let mut scale = display::Scale {
         width: 15,
-        height: 15,
+        height: 18,
     };
     load_file(path_to_rom, &mut chip8);
     let sdl_context = sdl2::init().unwrap();

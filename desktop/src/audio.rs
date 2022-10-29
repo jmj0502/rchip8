@@ -1,6 +1,7 @@
-use sdl2::audio::{AudioDevice, AudioCallback, AudioSpec, AudioSpecDesired};
+use sdl2::audio::{AudioDevice, AudioCallback, AudioSpecDesired};
 use sdl2::AudioSubsystem;
 
+#[allow(dead_code)]
 struct SquareWave {
     phase_inc: f32,
     phase: f32,
