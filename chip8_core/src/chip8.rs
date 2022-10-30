@@ -39,6 +39,7 @@ pub struct Chip8 {
     keys: [bool; NUMBER_OF_KEYS],
     v: [u8; NUMBER_OF_REGISTERS],
     screen: [bool; SCREEN_WIDTH * SCREEN_HEIGHT],
+    fps: u32,
 }
 
 impl Chip8 {
@@ -54,6 +55,7 @@ impl Chip8 {
             keys: [false; NUMBER_OF_KEYS],
             v: [0; NUMBER_OF_REGISTERS],
             screen: [false; SCREEN_WIDTH * SCREEN_HEIGHT],
+            fps: 60,
         };
         new_chip8.memory[..FONT_SIZE].copy_from_slice(&FONTS);
         new_chip8
@@ -72,6 +74,10 @@ impl Chip8 {
 
     pub fn get_display(&self) -> [bool; SCREEN_WIDTH * SCREEN_HEIGHT] {
         self.screen
+    }
+
+    pub fn get_fps(&self) -> u32 {
+        self.fps
     }
 
     pub fn tick_timers(&mut self) -> bool {
