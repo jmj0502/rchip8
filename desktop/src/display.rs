@@ -1,7 +1,7 @@
+use chip8_core::chip8::{Chip8, SCREEN_WIDTH};
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::WindowCanvas;
-use chip8_core::chip8::{Chip8, SCREEN_WIDTH};
 
 pub struct Scale {
     pub width: i32,

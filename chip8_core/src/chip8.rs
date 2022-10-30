@@ -130,7 +130,10 @@ impl Chip8 {
         // explained above.
         let y = (opcode & 0x00F0) >> 4;
 
-        println!("Current instruction: {:#04x} {:#04x} {:#04x} {:#04x}", first_nibble, x, y, n);
+        println!(
+            "Current instruction: {:#04x} {:#04x} {:#04x} {:#04x}",
+            first_nibble, x, y, n
+        );
         match (first_nibble, x, y, n) {
             // No OP opcode.
             (0, 0, 0, 0) => return,

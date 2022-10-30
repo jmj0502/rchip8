@@ -1,13 +1,13 @@
-pub mod display;
 pub mod audio;
+pub mod display;
 
-use chip8_core::chip8::{Chip8};
+use crate::audio::AudioDeviceWrapper;
+use chip8_core::chip8::Chip8;
 use sdl2::event::{Event, WindowEvent};
 use sdl2::keyboard::Keycode;
-use std::time::Duration;
 use std::io::Read;
+use std::time::Duration;
 use std::time::UNIX_EPOCH;
-use crate::audio::AudioDeviceWrapper;
 
 pub fn run(path_to_rom: &str) {
     const NUMBER_OF_CYCLES: u8 = 8;
@@ -18,8 +18,12 @@ pub fn run(path_to_rom: &str) {
     };
     load_file(path_to_rom, &mut chip8);
     let sdl_context = sdl2::init().unwrap();
-    let video_subsystem = sdl_context.video().expect("Couldn't initialize the video component.");
-    let audio_subsystem = sdl_context.audio().expect("Couldn't initialize the audio component.");
+    let video_subsystem = sdl_context
+        .video()
+        .expect("Couldn't initialize the video component.");
+    let audio_subsystem = sdl_context
+        .audio()
+        .expect("Couldn't initialize the audio component.");
     let audio_device = AudioDeviceWrapper::new(&audio_subsystem);
 
     let window = video_subsystem
@@ -73,7 +77,9 @@ pub fn run(path_to_rom: &str) {
 
         // This sleep call ensures that the system will run at 60fps. Modern hardware is so advanced that the emulator
         // may run at more than 400fps. So, this step is required in order to achieve a decent execution speed.
-        std::thread::sleep(Duration::from_micros((16666.67 as u64) - (_end_time - _start_time) as u64));
+        std::thread::sleep(Duration::from_micros(
+            (16666.67 as u64) - (_end_time - _start_time) as u64,
+        ));
         display::draw_to_screen(&mut canvas, &mut chip8, &scale);
         canvas.present();
         let should_beep = chip8.tick_timers();
