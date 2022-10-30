@@ -1,5 +1,9 @@
 use rand::distributions::Uniform;
 use rand::Rng;
+use std::fs::File;
+use serde::{Serialize, Deserialize, Serializer, Deserializer};
+use std::io::Write;
+use serde::ser::SerializeStruct;
 
 const MEMORY_SIZE: usize = 4096;
 const STACK_SIZE: usize = 16;
@@ -28,6 +32,7 @@ const FONTS: [u8; FONT_SIZE] = [
     0xF0, 0x80, 0xF0, 0x80, 0x80, // F
 ];
 
+#[derive(Copy, Clone, Debug)]
 pub struct Chip8 {
     memory: [u8; MEMORY_SIZE],
     i: u16,
@@ -40,6 +45,26 @@ pub struct Chip8 {
     v: [u8; NUMBER_OF_REGISTERS],
     screen: [bool; SCREEN_WIDTH * SCREEN_HEIGHT],
     fps: u32,
+}
+
+impl Serialize for Chip8 {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error> where
+        S: Serializer {
+        let mut state  = serializer.serialize_struct("Chip8", 11).expect("Couldn't serialize Chip8.");
+        state.serialize_field("memory", &self.memory.to_vec())?;
+        state.serialize_field("stack", &self.stack.to_vec())?;
+        state.serialize_field("v", &self.v.to_vec())?;
+        state.serialize_field("keys", &self.keys.to_vec())?;
+        state.serialize_field("screen", &self.screen.to_vec())?;
+        state.serialize_field("i", &self.i)?;
+        state.serialize_field("pc", &self.pc)?;
+        state.serialize_field("sp", &self.sp)?;
+        state.serialize_field("fps", &self.fps)?;
+        state.serialize_field("sound_timer", &self.sound_timer)?;
+        state.serialize_field("delay_timer", &self.delay_timer)?;
+
+        state.end()
+    }
 }
 
 impl Chip8 {
@@ -65,6 +90,12 @@ impl Chip8 {
         let start = MEMORY_START_ADDRESS as usize;
         let end = (MEMORY_START_ADDRESS as usize) + data.len();
         self.memory[start..end].copy_from_slice(&data);
+    }
+
+    pub fn save_state(&self) {
+        let mut _open_file = File::create("save-state.bin").expect("Couldn't create save state!");
+        let serialized = serde_json::to_string(&self);
+        println!("{:?}", serialized);
     }
 
     pub fn tick(&mut self) {

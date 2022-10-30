@@ -50,8 +50,12 @@ pub fn run(path_to_rom: &str) {
                     keycode: Some(keycode),
                     ..
                 } => {
-                    let key = map_key(keycode);
-                    chip8.key_down(key, true);
+                    if keycode != Keycode::F1 {
+                        let key = map_key(keycode);
+                        chip8.key_down(key, true);
+                    } else {
+                        chip8.save_state();
+                    }
                 }
                 Event::KeyUp {
                     keycode: Some(keycode),
