@@ -6,8 +6,8 @@ use chip8_core::chip8::Chip8;
 use sdl2::event::{Event, WindowEvent};
 use sdl2::keyboard::Keycode;
 use std::io::Read;
-use std::time::{Duration, Instant};
 use std::time::UNIX_EPOCH;
+use std::time::{Duration, Instant};
 
 pub fn run(path_to_rom: &str) {
     const NUMBER_OF_CYCLES: u8 = 8;

@@ -1,9 +1,13 @@
 use rand::distributions::Uniform;
 use rand::Rng;
-use std::fs::File;
-use serde::{Serialize, Deserialize, Serializer, Deserializer};
-use std::io::Write;
+use serde::de::{Error, MapAccess, Unexpected, Visitor};
 use serde::ser::SerializeStruct;
+use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+use std::fmt;
+use std::fmt::Formatter;
+use std::fs::File;
+use std::io::Write;
+use std::prelude::rust_2015::Result::Err;
 
 const MEMORY_SIZE: usize = 4096;
 const STACK_SIZE: usize = 16;
@@ -48,9 +52,13 @@ pub struct Chip8 {
 }
 
 impl Serialize for Chip8 {
-    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error> where
-        S: Serializer {
-        let mut state  = serializer.serialize_struct("Chip8", 11).expect("Couldn't serialize Chip8.");
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        let mut state = serializer
+            .serialize_struct("Chip8", 11)
+            .expect("Couldn't serialize Chip8.");
         state.serialize_field("memory", &self.memory.to_vec())?;
         state.serialize_field("stack", &self.stack.to_vec())?;
         state.serialize_field("v", &self.v.to_vec())?;
@@ -64,6 +72,202 @@ impl Serialize for Chip8 {
         state.serialize_field("delay_timer", &self.delay_timer)?;
 
         state.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for Chip8 {
+    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        enum Field {
+            Memory,
+            Stack,
+            V,
+            Keys,
+            Screen,
+            I,
+            Pc,
+            Sp,
+            Fps,
+            SoundTimer,
+            DelayTimer,
+        };
+
+        impl<'de> Deserialize<'de> for Field {
+            fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error> where
+                D: Deserializer<'de> {
+                struct FieldVisitor;
+
+                impl<'de> Visitor<'de> for FieldVisitor {
+                    type Value = Field;
+
+                    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                        formatter.write_str("`test`")
+                    }
+
+                    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E> where
+                    E: Error, {
+                        match v {
+                            "pc" => Ok(Field::Pc),
+                            "i" => Ok(Field::I),
+                            "fps" => Ok(Field::Fps),
+                            "sp" => Ok(Field::Sp),
+                            "delay_timer" => Ok(Field::DelayTimer),
+                            "sound_timer" => Ok(Field::SoundTimer),
+                            "stack" => Ok(Field::Stack),
+                            "v" => Ok(Field::V),
+                            "memory" => Ok(Field::Memory),
+                            "screen" => Ok(Field::Screen),
+                            "keys" => Ok(Field::Keys),
+                            _ => Err(de::Error::unknown_field(v, FIELDS)),
+                        }
+                    }
+                }
+
+                deserializer.deserialize_identifier(FieldVisitor)
+            }
+
+
+        }
+
+        struct Chip8Visitor;
+
+        impl<'de> Visitor<'de> for Chip8Visitor {
+            type Value = Chip8;
+
+            fn expecting(&self, formatter: &mut Formatter) -> fmt::Result {
+                formatter.write_str("struct Chip8")
+            }
+
+            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, <A as MapAccess<'de>>::Error>
+            where
+                A: MapAccess<'de>,
+            {
+                let mut memory = None;
+                let mut stack = None;
+                let mut v = None;
+                let mut keys = None;
+                let mut screen = None;
+                let mut i = None;
+                let mut pc = None;
+                let mut sp = None;
+                let mut fps = None;
+                let mut sound_timer = None;
+                let mut delay_timer = None;
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        Field::Memory => {
+                            if memory.is_some() {
+                                return Err(de::Error::duplicate_field("memory"));
+                            }
+                            memory = Some(map.next_value()?);
+                        }
+                        Field::Stack => {
+                            if stack.is_some() {
+                                return Err(de::Error::duplicate_field("stack"));
+                            }
+                            stack = Some(map.next_value()?);
+                        }
+                        Field::V => {
+                            if v.is_some() {
+                                return Err(de::Error::duplicate_field("v"));
+                            }
+                            v = Some(map.next_value()?);
+                        }
+                        Field::Keys => {
+                            if keys.is_some() {
+                                return Err(de::Error::duplicate_field("keys"));
+                            }
+                            keys = Some(map.next_value()?);
+                        }
+                        Field::Screen => {
+                            if screen.is_some() {
+                                return Err(de::Error::duplicate_field("keys"));
+                            }
+                            screen = Some(map.next_value()?);
+                        }
+                        Field::I => {
+                            if i.is_some() {
+                                return Err(de::Error::duplicate_field("i"));
+                            }
+                            i = Some(map.next_value()?);
+                        }
+                        Field::Pc => {
+                            if pc.is_some() {
+                                return Err(de::Error::duplicate_field("pc"));
+                            }
+                            pc = Some(map.next_value()?);
+                        }
+                        Field::Sp => {
+                            if sp.is_some() {
+                                return Err(de::Error::duplicate_field("sp"));
+                            }
+                            sp = Some(map.next_value()?);
+                        }
+                        Field::DelayTimer => {
+                            if delay_timer.is_some() {
+                                return Err(de::Error::duplicate_field("delay_timer"));
+                            }
+                            delay_timer = Some(map.next_value()?);
+                        }
+                        Field::SoundTimer => {
+                            if sound_timer.is_some() {
+                                return Err(de::Error::duplicate_field("sound_timer"));
+                            }
+                            sound_timer = Some(map.next_value()?);
+                        }
+                        Field::Fps => {
+                            if fps.is_some() {
+                                return Err(de::Error::duplicate_field("fps"));
+                            }
+                            fps = Some(map.next_value()?);
+                        }
+                    }
+                }
+
+                let memory = memory.ok_or_else(|| de::Error::missing_field("memory"))?;
+                let stack = stack.ok_or_else(|| de::Error::missing_field("stack"))?;
+                let v = v.ok_or_else(|| de::Error::missing_field("v"))?;
+                let keys = keys.ok_or_else(|| de::Error::missing_field("keys"))?;
+                let screen = screen.ok_or_else(|| de::Error::missing_field("screen"))?;
+                let i = i.ok_or_else(|| de::Error::missing_field("i"))?;
+                let pc = pc.ok_or_else(|| de::Error::missing_field("pc"))?;
+                let sp = sp.ok_or_else(|| de::Error::missing_field("sp"))?;
+                let fps = fps.ok_or_else(|| de::Error::missing_field("fps"))?;
+                let sound_timer = sound_timer.ok_or_else(|| de::Error::missing_field("sound_timer"))?;
+                let delay_timer = delay_timer.ok_or_else(|| de::Error::missing_field("delay_timer"))?;
+
+                Ok(Chip8::from_deserialized_data(
+                    memory,
+                    i,
+                    stack,
+                    pc,
+                    sp,
+                    delay_timer,
+                    sound_timer,
+                    keys,
+                    v,
+                    screen,
+                    fps,
+                ))
+            }
+        }
+
+        const FIELDS: &'static [&'static str] = &[
+            "memory",
+            "stack",
+            "v",
+            "screen",
+            "keys",
+            "i",
+            "pc",
+            "sp",
+            "sound_timer",
+            "delay_timer",
+            "fps",
+        ];
+        deserializer.deserialize_struct("Chip8", FIELDS, Chip8Visitor)
     }
 }
 
@@ -94,8 +298,11 @@ impl Chip8 {
 
     pub fn save_state(&self) {
         let mut _open_file = File::create("save-state.bin").expect("Couldn't create save state!");
-        let serialized = serde_json::to_string(&self);
-        println!("{:?}", serialized);
+
+        let serialized = serde_json::to_string(&self).unwrap();
+        let deserialized: Chip8 = serde_json::from_str(&serialized).unwrap();
+        println!("{:?}", deserialized);
+
     }
 
     pub fn tick(&mut self) {
@@ -130,6 +337,49 @@ impl Chip8 {
         if let Some(key_index) = key {
             self.keys[key_index as usize] = is_down;
         }
+    }
+
+    fn from_deserialized_data(
+        memory: Vec<u8>,
+        i: u16,
+        stack: Vec<u16>,
+        pc: u16,
+        sp: u8,
+        delay_timer: u8,
+        sound_timer: u8,
+        keys: Vec<bool>,
+        v: Vec<u8>,
+        screen: Vec<bool>,
+        fps: u32,
+    ) -> Self {
+        let mut memory_buf = [0; MEMORY_SIZE];
+        memory_buf[0..].copy_from_slice(&memory);
+
+        let mut stack_buf:[u16; STACK_SIZE] = [0; STACK_SIZE];
+        stack_buf[0..STACK_SIZE].copy_from_slice(&stack);
+
+        let mut v_buf: [u8; NUMBER_OF_REGISTERS] = [0; NUMBER_OF_REGISTERS];
+        v_buf[0..NUMBER_OF_REGISTERS].copy_from_slice(&v);
+
+        let mut screen_buf: [bool; SCREEN_HEIGHT * SCREEN_WIDTH] = [false; SCREEN_HEIGHT * SCREEN_WIDTH];
+        screen_buf[0..(SCREEN_WIDTH * SCREEN_HEIGHT)].copy_from_slice(&screen);
+
+        let mut keys_buf: [bool; NUMBER_OF_KEYS] = [false; NUMBER_OF_KEYS];
+        keys_buf[0..NUMBER_OF_KEYS].copy_from_slice(&keys);
+        Self {
+            memory: memory_buf,
+            stack: stack_buf,
+            v: v_buf,
+            keys: keys_buf,
+            screen: screen_buf,
+            pc,
+            sp,
+            delay_timer,
+            sound_timer,
+            i,
+            fps,
+        }
+
     }
 
     fn push(&mut self, instruction: u16) {
