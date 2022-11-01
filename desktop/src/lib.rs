@@ -54,7 +54,9 @@ pub fn run(path_to_rom: &str) {
                         Keycode::F1 => chip8.save_state(),
                         Keycode::F2 => {
                             let cpu = chip8.load_state();
-                            chip8 = cpu;
+                            if let Some(cpu) = cpu {
+                                chip8 = cpu;
+                            }
                         }
                         _ => {
                             let key = map_key(keycode);

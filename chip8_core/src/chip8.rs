@@ -300,10 +300,13 @@ impl Chip8 {
         fs::write("save-state.json",serialized_state).expect("Couldn't create save state!");
     }
 
-    pub fn load_state(&self) -> Self {
-        let serialized_state = fs::read_to_string("save-state.json").expect("Couldn't find the specified save state.");
-        let cpu: Chip8 = serde_json::from_str(&serialized_state).expect("Couldn't deserialized the loaded state!");
-        cpu
+    pub fn load_state(&self) -> Option<Self> {
+        let serialized_state = fs::read_to_string("save-state.json");
+        if serialized_state.is_err() {
+            return None;
+        }
+        let cpu: Chip8 = serde_json::from_str(&serialized_state.unwrap()).unwrap_or_else(|_| *self);
+        Some(cpu)
     }
 
     pub fn tick(&mut self) {
