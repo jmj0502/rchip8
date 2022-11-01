@@ -1,12 +1,11 @@
 use rand::distributions::Uniform;
 use rand::Rng;
-use serde::de::{Error, MapAccess, Unexpected, Visitor};
+use serde::de::{Error, MapAccess, Visitor};
 use serde::ser::SerializeStruct;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
 use std::fmt::Formatter;
-use std::fs::File;
-use std::io::Write;
+use std::fs;
 use std::prelude::rust_2015::Result::Err;
 
 const MEMORY_SIZE: usize = 4096;
@@ -92,7 +91,7 @@ impl<'de> Deserialize<'de> for Chip8 {
             Fps,
             SoundTimer,
             DelayTimer,
-        };
+        }
 
         impl<'de> Deserialize<'de> for Field {
             fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error> where
@@ -297,12 +296,14 @@ impl Chip8 {
     }
 
     pub fn save_state(&self) {
-        let mut _open_file = File::create("save-state.bin").expect("Couldn't create save state!");
+        let serialized_state = serde_json::to_string(&self).expect("Couldn't serialize the current state of the CPU.");
+        fs::write("save-state.json",serialized_state).expect("Couldn't create save state!");
+    }
 
-        let serialized = serde_json::to_string(&self).unwrap();
-        let deserialized: Chip8 = serde_json::from_str(&serialized).unwrap();
-        println!("{:?}", deserialized);
-
+    pub fn load_state(&self) -> Self {
+        let serialized_state = fs::read_to_string("save-state.json").expect("Couldn't find the specified save state.");
+        let cpu: Chip8 = serde_json::from_str(&serialized_state).expect("Couldn't deserialized the loaded state!");
+        cpu
     }
 
     pub fn tick(&mut self) {
