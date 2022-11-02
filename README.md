@@ -15,10 +15,24 @@ This project is not done, but multiple games can be played with little to no tro
 There are certain instructions (specifically, the ones used on the oldest implementations of chip-8)
 that I haven't map accurately, so you may experiment some bugs on some games.
 
-Right now, the emulator works as expected, it is able to reproduce the sound of each rom appropriately and
-supports resizing (you can even play on fullscreen). I'm planning to add other useful features, like
-support for save states, config files, rewind, and a better UI if possible (using something like egui or ImGui). 
+### Supported features
+* Resizing: The emulator modifies its scale according to the size of the window.
+* Save states: The emulator allow you to save and load the current state of a game (Press `F1` to save and `F2` to load).
+* Sound: The emulator reproduces the sound of most games appropriately.
 
+### Pending features
+* Rewind.
+* Config Files
+* Fancy UI (something like egui or ImGui will be helpful here).
+
+Since the emulator doesn't have support for config files, you'll have to
+use the default key mapping.
+```
+1 2 3 C     1 2 3 4
+4 5 6 D     q w e r
+7 8 9 E ->  a s d f
+A 0 B F     z x c v
+```
 ## Objective
 The main objective of the project was to learn more about low-level development while building something interesting
 at the same time. I was able to easily re-grasp most of the concepts used on the project (registers, instruction processing, etc.) and
