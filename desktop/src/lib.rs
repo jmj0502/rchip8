@@ -51,9 +51,13 @@ pub fn run(path_to_rom: &str) {
                     ..
                 } => {
                     match keycode {
-                        Keycode::F1 => chip8.save_state(),
+                        Keycode::F1 => {
+                            let rom_name = get_file_name(&path_to_rom);
+                            chip8.save_state(&rom_name);
+                        }
                         Keycode::F2 => {
-                            let cpu = chip8.load_state();
+                            let rom_name = get_file_name(&path_to_rom);
+                            let cpu = chip8.load_state(&rom_name);
                             if let Some(cpu) = cpu {
                                 chip8 = cpu;
                             }

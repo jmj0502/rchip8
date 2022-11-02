@@ -295,13 +295,13 @@ impl Chip8 {
         self.memory[start..end].copy_from_slice(&data);
     }
 
-    pub fn save_state(&self) {
+    pub fn save_state(&self, rom_name: &str) {
         let serialized_state = serde_json::to_string(&self).expect("Couldn't serialize the current state of the CPU.");
-        fs::write("save-state.json",serialized_state).expect("Couldn't create save state!");
+        fs::write(format!("{}.json", rom_name),serialized_state).expect("Couldn't create save state!");
     }
 
-    pub fn load_state(&self) -> Option<Self> {
-        let serialized_state = fs::read_to_string("save-state.json");
+    pub fn load_state(&self, rom_name: &str) -> Option<Self> {
+        let serialized_state = fs::read_to_string(format!("{}.json", rom_name));
         if serialized_state.is_err() {
             return None;
         }
